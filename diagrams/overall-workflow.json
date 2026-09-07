@@ -1,0 +1,75 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Comedy Problem-Solving Workflow",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "output": "diagrams/overall-workflow.html"
+  },
+  "lanes": [
+    { "id": "human", "label": "User & Creative" },
+    { "id": "workers", "label": "Office Workers" },
+    { "id": "audit", "label": "Audit & Task Control" },
+    { "id": "record", "label": "Readable Record", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "request", "label": "Serious attempt", "fromCol": 0, "toCol": 1 },
+    { "id": "discover", "label": "Find all required work", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "routine", "label": "Cast, solve, prove", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["brief", "initial", "audits", "queue", "creative", "worker", "verify", "transcript", "verdict"],
+  "semanticChecks": {
+    "allowedRoots": ["brief"],
+    "allowedTerminals": ["verdict"],
+    "requiredPaths": [
+      { "from": "brief", "to": "verdict" },
+      { "from": "failure", "to": "queue" }
+    ]
+  },
+  "nodes": [
+    { "id": "brief", "lane": "human", "col": 0, "type": "external", "label": "User Brief", "sublabel": "one visible UI defect", "width": 144 },
+    { "id": "initial", "lane": "workers", "col": 1, "type": "frontend", "label": "Initial Worker", "sublabel": "tries to finish", "tag": "sincere", "width": 144 },
+    { "id": "audits", "lane": "audit", "col": 2, "type": "security", "label": "Mandatory Audits", "sublabel": "Impeccable + Git + Ponytail", "width": 160 },
+    { "id": "queue", "lane": "audit", "col": 3, "type": "database", "label": "Minimum Task List", "sublabel": "dedupe; preserve evidence", "width": 160 },
+    { "id": "creative", "lane": "human", "col": 4, "type": "backend", "label": "Creative Casting", "sublabel": "tighten + hide routine", "tag": "user reviews", "width": 154 },
+    { "id": "worker", "lane": "workers", "col": 4, "type": "frontend", "label": "Assigned Worker", "sublabel": "command + proof", "tag": "max 3 attempts", "width": 154 },
+    { "id": "verify", "lane": "audit", "col": 5, "type": "security", "label": "Evidence Check", "sublabel": "PASS or unfinished", "width": 154 },
+    { "id": "failure", "lane": "record", "col": 3, "type": "messagebus", "label": "Failure Log", "sublabel": "error + transcript link", "width": 154 },
+    { "id": "transcript", "lane": "human", "col": 5, "type": "external", "label": "Public Transcript", "sublabel": "unaltered skit first", "width": 154 },
+    { "id": "verdict", "lane": "record", "col": 5, "type": "database", "label": "Final Verdict", "sublabel": "technical + comedy", "width": 154 }
+  ],
+  "edges": [
+    { "id": "brief-initial", "from": "brief", "to": "initial", "label": "request", "role": "main" },
+    { "id": "initial-audits", "from": "initial", "to": "audits", "label": "claimed result", "role": "main" },
+    { "id": "audits-queue", "from": "audits", "to": "queue", "label": "minimum work", "variant": "emphasis", "role": "main" },
+    { "id": "queue-creative", "from": "queue", "to": "creative", "label": "protected tasks", "role": "main" },
+    { "id": "creative-worker", "from": "creative", "to": "worker", "label": "hidden casting", "variant": "emphasis", "role": "main" },
+    { "id": "worker-verify", "from": "worker", "to": "verify", "label": "edit instructions + proof", "role": "main" },
+    { "id": "verify-transcript", "from": "verify", "to": "transcript", "label": "task passed", "variant": "emphasis", "role": "main" },
+    { "id": "verify-failure", "from": "verify", "to": "failure", "label": "unfinished", "variant": "security", "role": "error" },
+    { "id": "failure-queue", "from": "failure", "to": "queue", "label": "new or retried task", "variant": "security", "role": "return" },
+    { "id": "failure-verdict", "from": "failure", "to": "verdict", "label": "3 attempts exhausted", "variant": "security", "role": "error" },
+    { "id": "transcript-verdict", "from": "transcript", "to": "verdict", "label": "all tasks resolved", "variant": "emphasis", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "Hidden Comedy Contract",
+      "items": [
+        "Only User and Creative know the casting",
+        "Workers receive professional prompts, not comedy roles",
+        "Early success ends immediately with the punchline"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Document Contract",
+      "items": [
+        "Unaltered public dialogue appears first",
+        "Errors, attempts, audits, and evidence live below",
+        "Internal links connect every beat to its receipt"
+      ]
+    }
+  ]
+}
