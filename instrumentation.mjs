@@ -16,7 +16,7 @@ export function traceRoundMetadata(input) {
     traceName: 'run-duo-round',
     sessionId: input.caseId,
     tags: ['duo'],
-    metadata: { roundId: input.roundId, roundNumber: input.roundNumber },
+    metadata: { roundId: input.roundId, roundNumber: String(input.roundNumber) },
     input: { hypothetical: input.hypothetical, acceptance: input.acceptance },
   };
 }
@@ -42,13 +42,17 @@ export async function traceRound(input, run) {
     }, { asType: 'agent' }));
 }
 
-export async function traceAgent(stage, run) {
+export async function traceAgent(stage, input, run) {
   if (!tracingEnabled) return run();
   return startActiveObservation(`execute-${stage}`, async (agent) => {
-    agent.update({ input: { stage } });
+    agent.update({ input });
     try {
       const result = await run();
-      agent.update({ output: { status: result.status, failedField: result.failedField } });
+      agent.update({ output: {
+        status: result.status, action: result.action, evidence: result.evidence,
+        failedField: result.failedField, correction: result.correction, reaction: result.reaction,
+        provider: result.provider, fallbackReason: result.fallbackReason,
+      } });
       return result;
     } catch (error) {
       agent.update(errorAttributes(error));
@@ -57,7 +61,7 @@ export async function traceAgent(stage, run) {
   }, { asType: 'agent' });
 }
 
-export async function traceGeneration({ name, model, input, metadata }, run) {
+export async function traceGeneration({ name, model, input, metadata, validate }, run) {
   if (!tracingEnabled) return run();
   return startActiveObservation(name, async (generation) => {
     generation.update({ model, input, metadata });
@@ -68,6 +72,7 @@ export async function traceGeneration({ name, model, input, metadata }, run) {
         output: result.metrics.evalCount,
       };
       generation.update({ output: result.content, usageDetails });
+      validate?.(result);
       return result;
     } catch (error) {
       generation.update(errorAttributes(error));

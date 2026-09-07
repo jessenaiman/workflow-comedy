@@ -26,7 +26,7 @@ test('round tracing groups retries into one case session', async () => {
     traceName: 'run-duo-round',
     sessionId: 'case-42',
     tags: ['duo'],
-    metadata: { roundId: 'round-7', roundNumber: 2 },
+    metadata: { roundId: 'round-7', roundNumber: '2' },
     input: { hypothetical: 'Fix the race', acceptance: 'Only one winner' },
   });
 });

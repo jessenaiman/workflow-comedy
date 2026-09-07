@@ -106,7 +106,7 @@ async function removeFile(file) {
 
 async function codexChat({ role, input, prior, signal }) {
   const messages = prompt(role, input, prior);
-  return traceGeneration({ name: 'generate-codex-turn', model: 'gpt-5.6-luna', input: messages, metadata: { provider: 'codex', role } }, async () => {
+  return traceGeneration({ name: 'generate-codex-turn', model: 'gpt-5.6-luna', input: messages, metadata: { provider: 'codex', role }, validate: (result) => turn(result.content, role) }, async () => {
     const directory = await mkdtemp(join(tmpdir(), 'workspace-comedians-'));
     const schema = join(directory, 'TURN_SCHEMA.json'); const output = join(directory, 'TURN_OUTPUT.json');
     await writeFile(schema, JSON.stringify(TURN_SCHEMA));
@@ -161,7 +161,7 @@ function prompt(role, input, prior) {
 
 export async function ollamaChat({ role, input, prior, signal }) {
   const messages = prompt(role, input, prior);
-  return traceGeneration({ name: 'generate-ollama-turn', model: MODEL, input: messages, metadata: { provider: 'ollama', role } }, async () => {
+  return traceGeneration({ name: 'generate-ollama-turn', model: MODEL, input: messages, metadata: { provider: 'ollama', role }, validate: (result) => turn(result.content, role) }, async () => {
     const response = await fetch(OLLAMA, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT)]) : AbortSignal.timeout(REQUEST_TIMEOUT),
@@ -179,8 +179,9 @@ export async function runRound(rawInput, { chat = ollamaChat, emit = () => {}, s
   const turns = []; const path = ['task-contract']; const violations = [];
   const call = async (stage, node, adjust = (value) => value) => {
     try {
-      return await traceAgent(stage, async () => {
-        const reply = await chat({ role: stage, input: modelInput(stage, input), prior: turns.slice(-1), signal });
+      const task = modelInput(stage, input); const prior = turns.slice(-1);
+      return await traceAgent(stage, { task, prior }, async () => {
+        const reply = await chat({ role: stage, input: task, prior, signal });
         const next = adjust({ ...turn(reply?.content, stage), provider: reply?.provider || 'ollama', fallbackReason: reply?.fallbackReason || null, metrics: reply?.metrics || {} }); turns.push(next); path.push(node); emit({ type: 'turn', roundId: input.roundId, turn: next }); return next;
       });
     } catch (error) {
