@@ -1,0 +1,99 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DUO Theory-vs-Test Workflow",
+    "locale": "en",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "output": "workspace-comedians.workflow.html",
+    "views": [
+      {
+        "id": "primary-round",
+        "label": "Primary bounded round",
+        "focus": ["task-contract", "big-brain", "abbott", "evidence", "human-resolution", "case-closed"],
+        "note": "Start with a competent attempt, then resolve the DONE candidate with a human."
+      },
+      {
+        "id": "correction-loop",
+        "label": "Correction loop",
+        "focus": ["evidence", "costello", "correction-packet", "abbott-retry", "retry-evidence", "costello-recheck", "manager-decision"],
+        "note": "WRONG or BLOCKED names one failed field, applies one correction, and rechecks it once."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "round", "label": "Bounded round" },
+    { "id": "correction", "label": "Challenge and correction", "variant": "exception" },
+    { "id": "retry", "label": "One retry and recheck", "variant": "exception" },
+    { "id": "human", "label": "Human decision" }
+  ],
+  "phases": [
+    { "id": "contract", "label": "Contract", "fromCol": 0, "toCol": 1, "variant": "emphasis" },
+    { "id": "attempt", "label": "Theory + test", "fromCol": 2, "toCol": 2 },
+    { "id": "evidence", "label": "Evidence", "fromCol": 3, "toCol": 3, "variant": "security" },
+    { "id": "correction", "label": "One correction", "fromCol": 4, "toCol": 4, "variant": "dashed" },
+    { "id": "resolution", "label": "Resolution", "fromCol": 5, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["task-contract", "big-brain", "abbott", "evidence", "human-resolution", "case-closed"],
+  "semanticChecks": {
+    "allowedRoots": ["task-contract"],
+    "allowedTerminals": ["case-closed"],
+    "requiredEdges": [
+      { "from": "task-contract", "to": "big-brain" },
+      { "from": "big-brain", "to": "abbott" },
+      { "from": "abbott", "to": "evidence" },
+      { "from": "evidence", "to": "human-resolution" },
+      { "from": "evidence", "to": "costello" },
+      { "from": "costello", "to": "correction-packet" },
+      { "from": "correction-packet", "to": "abbott-retry" },
+      { "from": "abbott-retry", "to": "retry-evidence" },
+      { "from": "retry-evidence", "to": "costello-recheck" },
+      { "from": "costello-recheck", "to": "manager-decision" },
+      { "from": "manager-decision", "to": "human-resolution" },
+      { "from": "human-resolution", "to": "case-closed" },
+      { "from": "human-resolution", "to": "big-brain" }
+    ],
+    "requiredPaths": [
+      { "from": "evidence", "to": "human-resolution" },
+      { "from": "evidence", "to": "costello" },
+      { "from": "manager-decision", "to": "human-resolution" },
+      { "from": "human-resolution", "to": "case-closed" },
+      { "from": "human-resolution", "to": "big-brain" }
+    ]
+  },
+  "nodes": [
+    { "id": "task-contract", "lane": "round", "col": 0, "type": "external", "label": "Task contract", "width": 150, "height": 68 },
+    { "id": "big-brain", "lane": "round", "col": 1, "type": "backend", "label": "Big Brain", "width": 150, "height": 68 },
+    { "id": "abbott", "lane": "round", "col": 2, "type": "backend", "label": "Abbott first attempt", "width": 160, "height": 68 },
+    { "id": "evidence", "lane": "round", "col": 3, "type": "security", "label": "Evidence gate", "width": 150, "height": 68 },
+    { "id": "costello", "lane": "correction", "col": 4, "type": "external", "label": "Costello challenge", "width": 160, "height": 68 },
+    { "id": "correction-packet", "lane": "correction", "col": 5, "type": "messagebus", "label": "Correction packet", "width": 160, "height": 68 },
+    { "id": "abbott-retry", "lane": "retry", "col": 0, "type": "external", "label": "Abbott retry", "width": 150, "height": 68 },
+    { "id": "retry-evidence", "lane": "retry", "col": 1, "type": "security", "label": "Retry evidence", "width": 150, "height": 68 },
+    { "id": "costello-recheck", "lane": "retry", "col": 2, "type": "external", "label": "Costello recheck", "width": 160, "height": 68 },
+    { "id": "manager-decision", "lane": "retry", "col": 3, "type": "backend", "label": "Big Brain decision", "width": 160, "height": 68 },
+    { "id": "human-resolution", "lane": "human", "col": 4, "type": "external", "label": "Human resolution", "width": 160, "height": 68 },
+    { "id": "case-closed", "lane": "human", "col": 5, "type": "backend", "label": "Case closed", "width": 150, "height": 68 }
+  ],
+  "edges": [
+    { "id": "contract-to-brain", "from": "task-contract", "to": "big-brain", "label": "bounded task", "role": "main", "variant": "default" },
+    { "id": "brain-to-abbott", "from": "big-brain", "to": "abbott", "label": "assign first attempt", "role": "main", "variant": "emphasis" },
+    { "id": "abbott-to-evidence", "from": "abbott", "to": "evidence", "label": "status plus proof", "role": "main", "variant": "security" },
+    { "id": "done-to-human", "from": "evidence", "to": "human-resolution", "label": "DONE candidate", "role": "branch", "variant": "emphasis" },
+    { "id": "failure-to-costello", "from": "evidence", "to": "costello", "label": "WRONG/BLOCKED: field plus evidence", "role": "error", "variant": "security" },
+    { "id": "costello-to-packet", "from": "costello", "to": "correction-packet", "label": "smallest correction", "role": "return", "variant": "emphasis" },
+    { "id": "packet-to-retry", "from": "correction-packet", "to": "abbott-retry", "label": "retry once", "role": "return", "variant": "security" },
+    { "id": "retry-to-evidence", "from": "abbott-retry", "to": "retry-evidence", "label": "fresh proof", "role": "return", "variant": "default" },
+    { "id": "evidence-to-recheck", "from": "retry-evidence", "to": "costello-recheck", "role": "return", "variant": "default", "fromSide": "right", "toSide": "left", "route": "straight" },
+    { "id": "recheck-to-decision", "from": "costello-recheck", "to": "manager-decision", "label": "recheck result", "role": "branch", "variant": "emphasis" },
+    { "id": "decision-to-human", "from": "manager-decision", "to": "human-resolution", "role": "branch", "variant": "emphasis" },
+    { "id": "human-to-closed", "from": "human-resolution", "to": "case-closed", "label": "RESOLVED", "role": "main", "variant": "emphasis" },
+    { "id": "human-to-new-round", "from": "human-resolution", "to": "big-brain", "label": "STILL BROKEN + required new evidence", "role": "error", "variant": "security", "width": 1.2 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Theory-vs-test contract", "items": ["Big Brain bounds the task and proof before Abbott attempts it", "Evidence decides whether the candidate is DONE, WRONG, or BLOCKED", "A successful first attempt goes straight to human resolution"] },
+    { "dot": "amber", "title": "One correction loop", "items": ["Costello activates only after a failed evidence check", "The packet names one failed field and the smallest correction", "Retry and recheck happen once before a manager decision"] },
+    { "dot": "rose", "title": "Human-owned ending", "items": ["Resolved cases close and record the result", "Still-broken cases require new evidence before a new bounded round", "Comedy pressure never replaces proof or human authority"] }
+  ]
+}

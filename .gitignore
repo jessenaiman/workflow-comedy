@@ -1,2 +1,5 @@
 .env
 .worktrees/
+node_modules/
+workspace-comedians.runs.jsonl
+.impeccable/review/

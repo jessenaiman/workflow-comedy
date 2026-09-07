@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-06T00:00:00.000Z",
+  "title": "Design System: Workspace Comedians Director's Console",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "Warm Ink", "canonical": "#f3eee2", "tonalRamp": ["#29261f", "#464138", "#625b4f", "#7f7567", "#9b8f80", "#b9ad9b", "#d0c5b4", "#f3eee2"] },
+      "paper": { "role": "neutral", "displayName": "Blackout Paper", "canonical": "#15130f", "tonalRamp": ["#15130f", "#211e18", "#2d2921", "#39342b", "#454037", "#514b41", "#5d574c", "#696258"] },
+      "red": { "role": "primary", "displayName": "Live Red", "canonical": "#ee725a", "tonalRamp": ["#3a1712", "#62271f", "#8a372d", "#b0473a", "#d55745", "#ee725a", "#f29683", "#f7bbae"] },
+      "gold": { "role": "primary", "displayName": "Cue Amber", "canonical": "#f2c55c", "tonalRamp": ["#3a2e0e", "#625019", "#8a7024", "#b18f30", "#d0aa45", "#f2c55c", "#f6d887", "#fae9b5"] },
+      "green": { "role": "tertiary", "displayName": "Proof Green", "canonical": "#84d8a2", "tonalRamp": ["#173624", "#285a3b", "#397c52", "#4e9f6a", "#68bb85", "#84d8a2", "#a5e5b9", "#c7f0d2"] },
+      "blue": { "role": "tertiary", "displayName": "Abbott Blue", "canonical": "#9fb9ff", "tonalRamp": ["#1b2747", "#304474", "#455f9f", "#5d7ac4", "#7d9be4", "#9fb9ff", "#bdceff", "#dce5ff"] },
+      "focus": { "role": "tertiary", "displayName": "Focus Cream", "canonical": "#fff0a5", "tonalRamp": ["#3b360f", "#655c1b", "#8f8128", "#b5a43b", "#d3c15f", "#fff0a5", "#fff5c4", "#fffbe5"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Editorial Serif", "purpose": "Console and section headings." },
+      "label": { "displayName": "Call-Sheet Mono", "purpose": "Operational labels, statuses, and provider metadata." }
+    },
+    "motion": [
+      { "name": "cue-entry", "value": ".35s ease-out", "purpose": "Subtle round entrance when reduced motion is not requested." }
+    ],
+    "breakpoints": [
+      { "name": "stack", "value": "900px" },
+      { "name": "single-column-controls", "value": "600px" }
+    ]
+  },
+  "components": [
+    { "name": "Primary Cue Button", "kind": "button", "refersTo": "button-primary", "description": "Runs the bounded DUO rehearsal.", "html": "<button class=\"ds-btn-primary\">Run DUO</button>", "css": ".ds-btn-primary { background: #f2c55c; color: #18130b; padding: .65rem .9rem; border: 1px solid #f2c55c; border-radius: 4px; font: 800 1rem ui-serif, Georgia, serif; } .ds-btn-primary:focus-visible { outline: 3px solid #fff0a5; outline-offset: 3px; } .ds-btn-primary:disabled { opacity: .55; cursor: not-allowed; }" },
+    { "name": "Field", "kind": "input", "refersTo": "input-field", "description": "Operator call-sheet input with warm blackout treatment.", "html": "<textarea class=\"ds-field\" aria-label=\"Hypothetical\">Retry remains disabled after a request fails.</textarea>", "css": ".ds-field { width: 100%; min-height: 6rem; resize: vertical; color: #f3eee2; background: #11100d; border: 1px solid #5b5041; border-radius: 4px; padding: .7rem; font: 1rem/1.45 ui-serif, Georgia, serif; } .ds-field:focus-visible { outline: 3px solid #fff0a5; outline-offset: 3px; }" },
+    { "name": "Stage Map Frame", "kind": "custom", "description": "Full-width theory surface for the Archify workflow.", "html": "<div class=\"ds-stage\"><div class=\"ds-stage-label\">stage map standing by</div></div>", "css": ".ds-stage { min-height: 180px; position: relative; border: 1px solid #5b5041; background: #0e0d0b; } .ds-stage-label { position: absolute; right: .75rem; bottom: .6rem; color: #b9ad9b; background: #15130fde; padding: .3rem .5rem; font: .7rem ui-monospace, monospace; }" },
+    { "name": "Transcript Cue", "kind": "custom", "description": "Role-colored observed turn with status and evidence.", "html": "<article class=\"ds-cue\"><div><strong class=\"ds-role\">Abbott</strong><span class=\"ds-status\">DONE</span></div><div>Retry is enabled.<p class=\"ds-evidence\"><b>Evidence:</b> one request sent</p></div></article>", "css": ".ds-cue { display: grid; grid-template-columns: 8rem 1fr; gap: 1rem; padding: .9rem 0; border-bottom: 1px solid #3a342a; color: #f3eee2; } .ds-role { color: #9fb9ff; } .ds-status { display: block; margin-top: .25rem; color: #84d8a2; font: 700 .72rem ui-monospace, monospace; letter-spacing: .05em; } .ds-evidence { color: #b9ad9b; margin: .4rem 0 0; font-size: .92rem; }" }
+  ],
+  "narrative": {
+    "northStar": "The Radio-Rehearsal Booth",
+    "overview": "A warm blackout operator console where the Archify map is the stage and observed agent dialogue is the performance. Serif editorial copy, monospaced call-sheet labels, thin rules, and cue colors keep the human director oriented.",
+    "keyCharacteristics": ["Warm blackout paper", "Full-width stage map", "Evidence-bearing transcript", "Human verdict surface"],
+    "rules": [
+      { "name": "The Cue-Light Rule", "body": "Accent colors communicate live state, role, or proof; they are not decoration.", "section": "colors" },
+      { "name": "The Flat Booth Rule", "body": "Use tonal layering and rules instead of shadows or glossy floating cards.", "section": "elevation" }
+    ],
+    "dos": ["Do keep the stage map above the transcript.", "Do preserve visible focus and reduced-motion support."],
+    "donts": ["Don't introduce generic dashboard cards or glossy shadows.", "Don't flatten the serif/mono editorial pairing into a generic sans-serif UI."]
+  }
+}

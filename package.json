@@ -1,0 +1,15 @@
+{
+  "name": "workflow-comedy",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "test": "node --test server.test.mjs"
+  },
+  "dependencies": {
+    "@langfuse/otel": "5.11.0",
+    "@langfuse/tracing": "5.11.0",
+    "@opentelemetry/sdk-node": "0.222.0"
+  }
+}
