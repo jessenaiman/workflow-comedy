@@ -35,7 +35,7 @@
 - Produces: B node IDs `task_list`, `creative_cast`, `sincere_prompt`, `worker_attempt`, `evidence_check`, `failure_beat`, `attempt_ledger`, `task_closed`, `more_tasks`, `final_transcript`
 
 - [ ] Read the workflow/common schemas and one workflow example.
-- [ ] Replace the current candidate with the preserved B source, remove the obsolete `outside-right` route from `ledger-failed`, and keep `quality_profile: "showcase"`.
+- [ ] Replace the current candidate with the preserved B source, limit Office v1 to one retry, route a failed retry from `evidence_check` to `final_transcript`, and keep `quality_profile: "showcase"`.
 - [ ] Run `node bin/archify.mjs validate workflow <candidate> --quality showcase --json`; require 9 checks, 0 errors, 0 warnings.
 - [ ] Run `deliver`, then `visual-check`; preserve all receipts and generated evidence.
 - [ ] Commit the frozen candidate and generated artifacts.

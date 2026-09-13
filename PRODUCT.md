@@ -16,7 +16,7 @@ The primary user is a human director testing whether a bounded multi-agent workf
 
 ## Product Purpose
 
-Run hypothetical bug-fix discussions locally, show each agent turn against the ideal DUO workflow, and let the human decide whether the issue is actually resolved.
+Run an Office-comedy review locally, show each agent turn against the B workflow, visibly write an earned joke after failure, and let the human decide whether the issue is actually resolved.
 
 ## Positioning
 
@@ -28,11 +28,11 @@ The user enters a hypothetical, an acceptance check, and optionally a director-o
 
 ## Capabilities and Constraints
 
-- DUO is the only runnable mechanism in version one.
+- Office is the runnable mechanism in version one.
 - Each round permits one correction, retry, and recheck.
 - Only a human can reopen or close a case; reopening requires new evidence.
-- Agents cannot read files, execute commands, select arbitrary models, or alter repositories.
-- `smallthinker:latest` is the fixed local model.
+- Agents cannot read files, execute commands, or alter repositories.
+- The director selects any installed Ollama completion model; `ornith-1.5:9b` is recommended.
 
 ## Brand Commitments
 
@@ -40,7 +40,7 @@ The working roles are Big Brain, Abbott, and Costello. Abbott receives a serious
 
 ## Evidence on Hand
 
-- `workspace-comedians.workflow.json` is the existing, currently invalid Archify candidate.
+- `workspace-comedians.workflow.json` is the validated Office-comedy B workflow.
 - The source persona contracts live under `C:\sites\old-macdonald-had-a-school\docs\comedy-agents`.
 - No validated live console or prior run history exists yet.
 
