@@ -2,98 +2,113 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
-    "title": "DUO Theory-vs-Test Workflow",
+    "title": "Office Comedy Agent Loop",
     "locale": "en",
     "animation": "trace",
     "quality_profile": "showcase",
     "output": "workspace-comedians.workflow.html",
     "views": [
       {
-        "id": "primary-round",
-        "label": "Primary bounded round",
-        "focus": ["task-contract", "big-brain", "abbott", "evidence", "human-resolution", "case-closed"],
-        "note": "Start with a competent attempt, then resolve the DONE candidate with a human."
+        "id": "serious-first",
+        "label": "Sincere first attempt",
+        "focus": ["task_list", "creative_cast", "sincere_prompt", "worker_attempt", "evidence_check"],
+        "note": "The selected model receives a serious task; the director-only regression remains hidden until review."
       },
       {
-        "id": "correction-loop",
-        "label": "Correction loop",
-        "focus": ["evidence", "costello", "correction-packet", "abbott-retry", "retry-evidence", "costello-recheck", "manager-decision"],
-        "note": "WRONG or BLOCKED names one failed field, applies one correction, and rechecks it once."
+        "id": "earned-beat",
+        "label": "Failure writes the joke",
+        "focus": ["evidence_check", "failure_beat", "attempt_ledger", "sincere_prompt", "worker_attempt"],
+        "note": "A verified failure fills Setup and Turn before one readable retry."
+      },
+      {
+        "id": "earned-ending",
+        "label": "Proof earns the ending",
+        "focus": ["worker_attempt", "evidence_check", "task_closed", "more_tasks", "final_transcript"],
+        "note": "The recheck supplies the Payoff; the transcript and human verdict end the one-task run."
       }
     ]
   },
   "lanes": [
-    { "id": "round", "label": "Bounded round" },
-    { "id": "correction", "label": "Challenge and correction", "variant": "exception" },
-    { "id": "retry", "label": "One retry and recheck", "variant": "exception" },
-    { "id": "human", "label": "Human decision" }
+    { "id": "real_work", "label": "Real Work Queue" },
+    { "id": "creative", "label": "Creative — Private" },
+    { "id": "workers", "label": "Office Workers — Unaware" },
+    { "id": "proof", "label": "Review & Evidence" }
   ],
   "phases": [
-    { "id": "contract", "label": "Contract", "fromCol": 0, "toCol": 1, "variant": "emphasis" },
-    { "id": "attempt", "label": "Theory + test", "fromCol": 2, "toCol": 2 },
-    { "id": "evidence", "label": "Evidence", "fromCol": 3, "toCol": 3, "variant": "security" },
-    { "id": "correction", "label": "One correction", "fromCol": 4, "toCol": 4, "variant": "dashed" },
-    { "id": "resolution", "label": "Resolution", "fromCol": 5, "toCol": 5, "variant": "emphasis" }
+    { "id": "prepare", "label": "Choose task + model", "fromCol": 0, "toCol": 1 },
+    { "id": "perform", "label": "Cast and attempt", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "prove", "label": "Prove, loop, or finish", "fromCol": 4, "toCol": 5, "variant": "dashed" }
   ],
-  "mainPath": ["task-contract", "big-brain", "abbott", "evidence", "human-resolution", "case-closed"],
+  "mainPath": ["task_list", "creative_cast", "sincere_prompt", "worker_attempt", "evidence_check", "task_closed", "more_tasks", "final_transcript"],
   "semanticChecks": {
-    "allowedRoots": ["task-contract"],
-    "allowedTerminals": ["case-closed"],
+    "allowedRoots": ["task_list"],
+    "allowedTerminals": ["final_transcript"],
     "requiredEdges": [
-      { "from": "task-contract", "to": "big-brain" },
-      { "from": "big-brain", "to": "abbott" },
-      { "from": "abbott", "to": "evidence" },
-      { "from": "evidence", "to": "human-resolution" },
-      { "from": "evidence", "to": "costello" },
-      { "from": "costello", "to": "correction-packet" },
-      { "from": "correction-packet", "to": "abbott-retry" },
-      { "from": "abbott-retry", "to": "retry-evidence" },
-      { "from": "retry-evidence", "to": "costello-recheck" },
-      { "from": "costello-recheck", "to": "manager-decision" },
-      { "from": "manager-decision", "to": "human-resolution" },
-      { "from": "human-resolution", "to": "case-closed" },
-      { "from": "human-resolution", "to": "big-brain" }
+      { "from": "task_list", "to": "creative_cast" },
+      { "from": "creative_cast", "to": "sincere_prompt" },
+      { "from": "sincere_prompt", "to": "worker_attempt" },
+      { "from": "worker_attempt", "to": "evidence_check" },
+      { "from": "evidence_check", "to": "task_closed" },
+      { "from": "evidence_check", "to": "failure_beat" },
+      { "from": "failure_beat", "to": "attempt_ledger" },
+      { "from": "attempt_ledger", "to": "sincere_prompt" },
+      { "from": "evidence_check", "to": "final_transcript" },
+      { "from": "task_closed", "to": "more_tasks" },
+      { "from": "more_tasks", "to": "task_list" },
+      { "from": "more_tasks", "to": "final_transcript" }
     ],
     "requiredPaths": [
-      { "from": "evidence", "to": "human-resolution" },
-      { "from": "evidence", "to": "costello" },
-      { "from": "manager-decision", "to": "human-resolution" },
-      { "from": "human-resolution", "to": "case-closed" },
-      { "from": "human-resolution", "to": "big-brain" }
+      { "from": "failure_beat", "to": "worker_attempt" },
+      { "from": "attempt_ledger", "to": "final_transcript" },
+      { "from": "more_tasks", "to": "task_list" }
     ]
   },
   "nodes": [
-    { "id": "task-contract", "lane": "round", "col": 0, "type": "external", "label": "Task contract", "width": 150, "height": 68 },
-    { "id": "big-brain", "lane": "round", "col": 1, "type": "backend", "label": "Big Brain", "width": 150, "height": 68 },
-    { "id": "abbott", "lane": "round", "col": 2, "type": "backend", "label": "Abbott first attempt", "width": 160, "height": 68 },
-    { "id": "evidence", "lane": "round", "col": 3, "type": "security", "label": "Evidence gate", "width": 150, "height": 68 },
-    { "id": "costello", "lane": "correction", "col": 4, "type": "external", "label": "Costello challenge", "width": 160, "height": 68 },
-    { "id": "correction-packet", "lane": "correction", "col": 5, "type": "messagebus", "label": "Correction packet", "width": 160, "height": 68 },
-    { "id": "abbott-retry", "lane": "retry", "col": 0, "type": "external", "label": "Abbott retry", "width": 150, "height": 68 },
-    { "id": "retry-evidence", "lane": "retry", "col": 1, "type": "security", "label": "Retry evidence", "width": 150, "height": 68 },
-    { "id": "costello-recheck", "lane": "retry", "col": 2, "type": "external", "label": "Costello recheck", "width": 160, "height": 68 },
-    { "id": "manager-decision", "lane": "retry", "col": 3, "type": "backend", "label": "Big Brain decision", "width": 160, "height": 68 },
-    { "id": "human-resolution", "lane": "human", "col": 4, "type": "external", "label": "Human resolution", "width": 160, "height": 68 },
-    { "id": "case-closed", "lane": "human", "col": 5, "type": "backend", "label": "Case closed", "width": 150, "height": 68 }
+    { "id": "task_list", "lane": "real_work", "col": 0, "type": "database", "label": "1. Audit Task + Model", "sublabel": "scenario + model", "tag": "director chooses", "width": 151 },
+    { "id": "creative_cast", "lane": "creative", "col": 1, "type": "backend", "label": "2. Creative Casts", "sublabel": "tightens task; hides bit", "tag": "director sees", "width": 132 },
+    { "id": "sincere_prompt", "lane": "creative", "col": 2, "type": "messagebus", "label": "3. Sincere Prompt", "sublabel": "job + proof; no joke", "tag": "worker unaware", "width": 132 },
+    { "id": "worker_attempt", "lane": "workers", "col": 3, "type": "frontend", "label": "4. Abbott Attempts", "sublabel": "tries to finish completely", "tag": "best effort", "width": 138 },
+    { "id": "evidence_check", "lane": "proof", "col": 4, "type": "security", "label": "5. Reviewer Tests", "sublabel": "real path + named proof", "width": 132 },
+    { "id": "failure_beat", "lane": "creative", "col": 4, "type": "messagebus", "label": "6. Failure Earns Beat", "sublabel": "Setup → Turn → Payoff", "tag": "Joke Desk", "width": 151 },
+    { "id": "attempt_ledger", "lane": "creative", "col": 3, "type": "database", "label": "Attempt Ledger", "sublabel": "1/2 → 2/2", "width": 124 },
+    { "id": "task_closed", "lane": "proof", "col": 5, "type": "database", "label": "Task Passes", "sublabel": "check it; preserve proof", "width": 116 },
+    { "id": "more_tasks", "lane": "real_work", "col": 5, "type": "messagebus", "label": "More Audit Tasks?", "sublabel": "Office demo takes NO", "width": 132 },
+    { "id": "final_transcript", "lane": "creative", "col": 5, "type": "external", "label": "Transcript + Verdict", "sublabel": "Langfuse session + human", "tag": "earned ending", "width": 152 }
   ],
   "edges": [
-    { "id": "contract-to-brain", "from": "task-contract", "to": "big-brain", "label": "bounded task", "role": "main", "variant": "default" },
-    { "id": "brain-to-abbott", "from": "big-brain", "to": "abbott", "label": "assign first attempt", "role": "main", "variant": "emphasis" },
-    { "id": "abbott-to-evidence", "from": "abbott", "to": "evidence", "label": "status plus proof", "role": "main", "variant": "security" },
-    { "id": "done-to-human", "from": "evidence", "to": "human-resolution", "label": "DONE candidate", "role": "branch", "variant": "emphasis" },
-    { "id": "failure-to-costello", "from": "evidence", "to": "costello", "label": "WRONG/BLOCKED: field plus evidence", "role": "error", "variant": "security" },
-    { "id": "costello-to-packet", "from": "costello", "to": "correction-packet", "label": "smallest correction", "role": "return", "variant": "emphasis" },
-    { "id": "packet-to-retry", "from": "correction-packet", "to": "abbott-retry", "label": "retry once", "role": "return", "variant": "security" },
-    { "id": "retry-to-evidence", "from": "abbott-retry", "to": "retry-evidence", "label": "fresh proof", "role": "return", "variant": "default" },
-    { "id": "evidence-to-recheck", "from": "retry-evidence", "to": "costello-recheck", "role": "return", "variant": "default", "fromSide": "right", "toSide": "left", "route": "straight" },
-    { "id": "recheck-to-decision", "from": "costello-recheck", "to": "manager-decision", "label": "recheck result", "role": "branch", "variant": "emphasis" },
-    { "id": "decision-to-human", "from": "manager-decision", "to": "human-resolution", "role": "branch", "variant": "emphasis" },
-    { "id": "human-to-closed", "from": "human-resolution", "to": "case-closed", "label": "RESOLVED", "role": "main", "variant": "emphasis" },
-    { "id": "human-to-new-round", "from": "human-resolution", "to": "big-brain", "label": "STILL BROKEN + required new evidence", "role": "error", "variant": "security", "width": 1.2 }
+    { "id": "list-cast", "from": "task_list", "to": "creative_cast", "label": "one protected task", "role": "main" },
+    { "id": "cast-prompt", "from": "creative_cast", "to": "sincere_prompt", "label": "hidden casting", "variant": "emphasis", "role": "main" },
+    { "id": "prompt-worker", "from": "sincere_prompt", "to": "worker_attempt", "label": "assign owner", "role": "main" },
+    { "id": "worker-review", "from": "worker_attempt", "to": "evidence_check", "label": "claimed fix + proof", "role": "main" },
+    { "id": "review-pass", "from": "evidence_check", "to": "task_closed", "label": "PASS", "variant": "emphasis", "role": "main" },
+    { "id": "review-fail", "from": "evidence_check", "to": "failure_beat", "label": "FAIL writes Setup", "variant": "security", "role": "error" },
+    { "id": "beat-ledger", "from": "failure_beat", "to": "attempt_ledger", "label": "Turn + attempt", "variant": "security", "role": "error" },
+    { "id": "ledger-retry", "from": "attempt_ledger", "to": "sincere_prompt", "label": "attempt < 2: tighten + reassign", "variant": "emphasis", "role": "return" },
+    { "id": "review-unresolved", "from": "evidence_check", "to": "final_transcript", "label": "retry FAIL: unresolved verdict", "variant": "security", "role": "error" },
+    { "id": "closed-next", "from": "task_closed", "to": "more_tasks", "label": "task complete", "role": "main" },
+    { "id": "next-loop", "from": "more_tasks", "to": "task_list", "label": "YES: next audit task", "variant": "emphasis", "role": "return" },
+    { "id": "next-ending", "from": "more_tasks", "to": "final_transcript", "label": "NO: transcript + verdict", "variant": "emphasis", "role": "main" }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Theory-vs-test contract", "items": ["Big Brain bounds the task and proof before Abbott attempts it", "Evidence decides whether the candidate is DONE, WRONG, or BLOCKED", "A successful first attempt goes straight to human resolution"] },
-    { "dot": "amber", "title": "One correction loop", "items": ["Costello activates only after a failed evidence check", "The packet names one failed field and the smallest correction", "Retry and recheck happen once before a manager decision"] },
-    { "dot": "rose", "title": "Human-owned ending", "items": ["Resolved cases close and record the result", "Still-broken cases require new evidence before a new bounded round", "Comedy pressure never replaces proof or human authority"] }
+    {
+      "dot": "violet",
+      "title": "The Office Bit",
+      "items": [
+        "Abbott receives a sincere task and tries to win",
+        "The hidden regression guarantees the first evidence check fails",
+        "Only that real failure writes the visible joke",
+        "A proven retry ends the bit immediately"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Readable Proof",
+      "items": [
+        "The chosen Ollama model stays visible on every turn",
+        "Setup, Turn, and Payoff appear between slow model calls",
+        "Langfuse retains the agent graph, tokens, cost, and transcript",
+        "The human alone records the technical and comedy verdict"
+      ]
+    }
   ]
 }

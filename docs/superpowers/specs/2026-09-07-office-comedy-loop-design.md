@@ -15,9 +15,10 @@ The preserved `Workflow Comedy Loop` becomes canonical after repairing its obsol
 `Audit Task List → Creative Casts → Sincere Prompt → Worker Attempts → Reviewer Tests`
 
 - PASS: `Task Passes → More Audit Tasks? → Punchline + Verdict`
-- FAIL: `Failure Earns Beat → Attempt Ledger → Sincere Prompt → Worker Attempts`
+- FAIL with attempts remaining: `Failure Earns Beat → Attempt Ledger → Sincere Prompt → Worker Attempts`
+- FAIL after retry: `Reviewer Tests → Punchline + Verdict`
 
-The Office demo follows the FAIL path once, then returns for one retry and final review. The diagram remains visibly embedded above the transcript, and each emitted event focuses the corresponding node.
+The Office demo follows the FAIL path once, then returns for one retry and final review. A failed retry ends unresolved at the transcript. The screenplay is the visual focus; the diagram remains visible as a compact director control beside it on wide screens and above it on narrow screens. Each emitted event focuses the corresponding node.
 
 ## Guaranteed Office scenario
 

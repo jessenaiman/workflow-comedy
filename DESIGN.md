@@ -1,6 +1,6 @@
 ---
-name: Workspace Comedians Director's Console
-description: A warm blackout radio-rehearsal console where the ideal workflow is the stage map and observed dialogue is the performance.
+name: Office Comedy Live Script Room
+description: A screenplay-first table read where evidence writes the joke and the workflow map acts as the director's control surface.
 colors:
   ink: "#f3eee2"
   paper: "#15130f"
@@ -39,20 +39,20 @@ components:
     padding: ".7rem"
 ---
 
-# Design System: Workspace Comedians Director's Console
+# Design System: Office Comedy Live Script Room
 
 ## Overview
 
-**Creative North Star: "The Radio-Rehearsal Booth"**
+**Creative North Star: "The Live Table Read"**
 
-This is an operator console with the visual grammar of a live rehearsal: warm blackout paper, thin cue-sheet rules, amber practical light, and editorial serif typography. The full-width Archify map is the stage; the transcript below it is the performance record. The left rail is an operator's call sheet, not a generic settings dashboard.
+This is a screening room built around a bright screenplay page. Dialogue, evidence, and the Joke Desk dominate the reading surface; the compact Archify map and call sheet stay in a dark, sticky director rail. Courier-style dialogue and scene headings make each slow model turn feel like a live table read.
 
 Density is deliberate and workmanlike. The page uses tonal surfaces and rules to separate zones rather than decorative cards or heavy shadows. Red marks live/on-air and Costello reaction, amber marks action and evidence, blue identifies Abbott, and green confirms completion.
 
 **Key Characteristics:**
 - Warm dark paper with restrained tonal layering
 - Serif editorial copy paired with monospaced status labels
-- Stage map first, observed transcript second, human verdict last
+- Screenplay and Joke Desk first, compact stage control beside them, human verdict last
 - Thin rules, small radii, visible focus, reduced-motion support
 
 ## Colors
@@ -101,9 +101,9 @@ The palette is a warm blackout with amber cue light, red live signals, and role-
 
 ## Layout
 
-The page is centered in a `max-width: 1550px` main region with responsive padding of `clamp(1rem, 3vw, 2.5rem)`. The stage map spans the full main width above a two-column workbench. At desktop widths the workbench uses a `minmax(280px,380px)` call-sheet rail and a flexible performance pane with a `2.5rem` gap; the rail is separated by a right rule. Below `900px`, the workbench stacks and the rail becomes a bottom-ruled section. Below `600px`, transcript cues and rating controls collapse to one column. The sticky header uses `clamp(1rem,4vw,4rem)` horizontal padding.
+The page uses a `minmax(300px,390px)` sticky director rail beside a flexible screenplay page. The rail contains the 350px Archify control map, model selector, scene fields, and archive. The screenplay page contains scene heading, three-slot Joke Desk, live transcript, and verdict. Below `980px`, the rail becomes a two-column block above the script; below `650px`, everything stacks.
 
-The stage map is a bordered iframe at `height: 900px`; on smaller screens it uses a `600px` minimum or `70vh` with a `520px` minimum. Sections use `1.2rem` vertical padding and thin rules as the spacing rhythm.
+The stage map is a bordered iframe at `350px` desktop height, `420px` tablet height, and `360px` phone height. It controls and explains the run without displacing the script from the first viewport.
 
 ## Elevation & Depth
 
@@ -136,16 +136,18 @@ Controls use a restrained `4px` radius. The stage map and iframe are square-corn
 
 ### Cards / Containers
 - **Style:** Containers are rule-bounded sections rather than floating cards.
-- **Stage map:** Full-width framed black iframe with a small mono sync output overlaid at bottom right.
+- **Stage map:** Compact framed iframe in the director rail with a live node-name receipt beneath it.
 - **Verdict:** Panel Brown background, rule border, and a gold topological role as the human close/reopen surface.
 
-### Signature Component: Stage Map + Transcript
-The Archify map is the theory surface and stays above the transcript. Live turns call out corresponding map nodes, with the sync label reporting whether the map follows the cue. Transcript rows use a role color, mono status/provider metadata, evidence text, and rule separators. The gold `2px` top border marks the start of observed performance.
+### Signature Component: Evidence-Written Joke Desk
+Three screenplay slots remain visible throughout the run: Setup waits for verified failure evidence, Turn waits for Costello's correction, and Payoff waits for retry evidence. Each validated event types into its slot while the next model call runs. Raw partial model JSON never appears. Archify focus follows the same events in the director rail.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep the Archify stage map full-width above the performance transcript.
+- **Do** keep screenplay text visually dominant and Archify visible as a compact control.
+- **Do** show the chosen model and provider on every turn.
+- **Do** let only verified failure evidence begin the Joke Desk.
 - **Do** use warm blackout surfaces and thin rules for hierarchy.
 - **Do** reserve amber, red, blue, and green for cues, roles, and status meaning.
 - **Do** preserve visible keyboard focus and reduced-motion behavior.

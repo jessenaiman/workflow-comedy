@@ -9,11 +9,16 @@ import { flushTracing, traceAgent, traceGeneration, traceRound, traceRoundMetada
 
 export { traceRoundMetadata };
 
-const MODEL = 'smallthinker:latest';
-const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+const DEFAULT_MODEL = 'ornith-1.5:9b';
+const OLLAMA_BASE = 'http://127.0.0.1:11434';
+const OLLAMA = `${OLLAMA_BASE}/api/chat`;
 const MAX_BODY = 100_000;
 const MAX_TEXT = 6_000;
-const REQUEST_TIMEOUT = 30_000;
+export function requestTimeout(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 1_000 ? parsed : 45_000;
+}
+const REQUEST_TIMEOUT = requestTimeout(process.env.OLLAMA_REQUEST_TIMEOUT_MS);
 const WORKFLOW_FILE = new URL('./workspace-comedians.workflow.json', import.meta.url);
 const DIAGRAM_FILE = new URL('./workspace-comedians.workflow.html', import.meta.url);
 const workflow = JSON.parse(await readFile(WORKFLOW_FILE, 'utf8'));
@@ -34,9 +39,8 @@ const roleName = {
   'big-brain-decision': 'Big Brain',
 };
 const nodeForStage = {
-  'big-brain-contract': 'big-brain', 'abbott-attempt': 'abbott', 'big-brain-review': 'evidence',
-  'costello-correction': 'costello', 'abbott-retry': 'abbott-retry', 'costello-recheck': 'costello-recheck',
-  'big-brain-decision': 'manager-decision',
+  'big-brain-contract': 'creative_cast', 'abbott-attempt': 'worker_attempt', 'big-brain-review': 'evidence_check',
+  'costello-correction': 'failure_beat', 'abbott-retry': 'worker_attempt', 'costello-recheck': 'evidence_check',
 };
 
 function fail(message, status = 400) { const error = new Error(message); error.status = status; return error; }
@@ -44,12 +48,26 @@ function text(value, field, required = true) {
   if (typeof value !== 'string' || (required && !value.trim()) || value.length > MAX_TEXT) throw fail(`Invalid ${field}`);
   return value.trim();
 }
+export function completionModels(models) {
+  return (Array.isArray(models) ? models : []).filter(({ capabilities }) => capabilities?.includes('completion'));
+}
+export function selectModel(requested, models) {
+  const model = typeof requested === 'string' && requested.trim() ? requested.trim() : DEFAULT_MODEL;
+  if (!models.some(({ name }) => name === model)) throw fail('Selected model is not installed for completion');
+  return model;
+}
+async function ollamaModels() {
+  const response = await fetch(`${OLLAMA_BASE}/api/tags`, { signal: AbortSignal.timeout(3_000) });
+  if (!response.ok) throw fail(`Ollama model list failed: ${response.status}`, 502);
+  return (await response.json()).models || [];
+}
 function cleanInput(input) {
   if (!input || typeof input !== 'object') throw fail('JSON object required');
   return {
     caseId: text(input.caseId, 'caseId'), roundId: text(input.roundId, 'roundId'),
     roundNumber: Number.isInteger(input.roundNumber) && input.roundNumber > 0 ? input.roundNumber : 1,
     hypothetical: text(input.hypothetical, 'hypothetical'), acceptance: text(input.acceptance, 'acceptance'),
+    model: text(input.model || DEFAULT_MODEL, 'model'),
     hiddenRegression: text(input.hiddenRegression || '', 'hiddenRegression', false),
     unresolvedEvidence: text(input.unresolvedEvidence || '', 'unresolvedEvidence', false),
   };
@@ -75,11 +93,15 @@ function turn(content, role) {
   let result = content;
   if (typeof result === 'string') { try { result = JSON.parse(result); } catch { throw fail('Model returned non-JSON turn'); } }
   if (!result || typeof result !== 'object' || !['DONE', 'WRONG', 'BLOCKED'].includes(result.status)) throw fail('Invalid model status');
+  const blocked = result.status === 'BLOCKED';
+  const fallbackReaction = role === 'costello-correction'
+    ? 'The old response arrived late and still missed the memo.'
+    : 'The retry got promoted. Evidence remains on probation.';
   const parsed = {
     status: result.status, action: text(result.action, 'model action'), evidence: text(result.evidence, 'model evidence'),
-    failedField: text(result.failedField || '', 'model failedField', result.status !== 'DONE'),
-    correction: text(result.correction || '', 'model correction', result.status !== 'DONE'),
-    reaction: role.startsWith('costello-') ? text(result.reaction || '', 'model reaction', false) : '',
+    failedField: text(result.failedField || (blocked ? 'INPUT' : ''), 'model failedField', result.status !== 'DONE'),
+    correction: text(result.correction || (blocked ? 'Provide missing evidence.' : ''), 'model correction', result.status !== 'DONE'),
+    reaction: role.startsWith('costello-') ? text(result.reaction || fallbackReaction, 'model reaction') : '',
   };
   return { role: roleName[role], stage: role, nodeId: nodeForStage[role], ...parsed };
 }
@@ -93,11 +115,25 @@ function modelInput(role, input) {
 
 export function codexArgs(directory, schema, output) {
   return [
-    'exec', '--ephemeral', '--ignore-user-config', '--ignore-rules', '-s', 'read-only',
+    'exec', '--json', '--ephemeral', '--ignore-user-config', '--ignore-rules', '-s', 'read-only',
     '--skip-git-repo-check', '-C', directory, '--model', 'gpt-5.6-luna',
     '--config', 'model_reasoning_effort="low"', '--output-schema', schema,
     '--output-last-message', output, '-',
   ];
+}
+
+export function codexUsage(jsonl) {
+  for (const line of String(jsonl).trim().split(/\r?\n/).reverse()) {
+    try {
+      const event = JSON.parse(line);
+      if (event.type === 'turn.completed' && event.usage) return {
+        promptEvalCount: event.usage.input_tokens,
+        evalCount: event.usage.output_tokens,
+        cachedInputTokens: event.usage.cached_input_tokens || 0,
+      };
+    } catch {}
+  }
+  return {};
 }
 
 async function removeFile(file) {
@@ -109,18 +145,20 @@ async function codexChat({ role, input, prior, signal }) {
   return traceGeneration({ name: 'generate-codex-turn', model: 'gpt-5.6-luna', input: messages, metadata: { provider: 'codex', role }, validate: (result) => turn(result.content, role) }, async () => {
     const directory = await mkdtemp(join(tmpdir(), 'workspace-comedians-'));
     const schema = join(directory, 'TURN_SCHEMA.json'); const output = join(directory, 'TURN_OUTPUT.json');
+    let events = '';
     await writeFile(schema, JSON.stringify(TURN_SCHEMA));
     try {
       await new Promise((resolve, reject) => {
-        const child = spawn('codex', codexArgs(directory, schema, output), { stdio: ['pipe', 'ignore', 'pipe'] });
+        const child = spawn('codex', codexArgs(directory, schema, output), { stdio: ['pipe', 'pipe', 'pipe'] });
         let stderr = ''; child.stderr.on('data', (chunk) => { stderr += chunk; });
+        child.stdout.on('data', (chunk) => { events += chunk; });
         child.once('error', reject); child.once('close', (code) => code === 0 ? resolve() : reject(new Error(stderr.trim() || `Codex exited ${code}`)));
         child.stdin.end(JSON.stringify(messages));
         const timeout = AbortSignal.timeout(60_000);
         const abort = signal ? AbortSignal.any([signal, timeout]) : timeout;
         abort.addEventListener('abort', () => child.kill(), { once: true });
       });
-      return { content: await readFile(output, 'utf8'), provider: 'codex', metrics: { fallback: true } };
+      return { content: await readFile(output, 'utf8'), provider: 'codex', metrics: { fallback: true, ...codexUsage(events) } };
     } finally {
       await removeFile(schema); await removeFile(output); await rmdir(directory);
     }
@@ -159,13 +197,13 @@ function prompt(role, input, prior) {
   ];
 }
 
-export async function ollamaChat({ role, input, prior, signal }) {
+export async function ollamaChat({ role, input, prior, signal, model = DEFAULT_MODEL }) {
   const messages = prompt(role, input, prior);
-  return traceGeneration({ name: 'generate-ollama-turn', model: MODEL, input: messages, metadata: { provider: 'ollama', role }, validate: (result) => turn(result.content, role) }, async () => {
+  return traceGeneration({ name: 'generate-ollama-turn', model, input: messages, metadata: { provider: 'ollama', role }, validate: (result) => turn(result.content, role) }, async () => {
     const response = await fetch(OLLAMA, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT)]) : AbortSignal.timeout(REQUEST_TIMEOUT),
-      body: JSON.stringify({ model: MODEL, stream: false, format: TURN_SCHEMA, messages, options: { num_ctx: 2048, num_predict: 180, temperature: role.startsWith('costello-') ? 0.75 : 0.25 } }),
+      body: JSON.stringify({ model, stream: false, format: TURN_SCHEMA, messages, options: { num_ctx: 2048, num_predict: 180, temperature: role.startsWith('costello-') ? 0.75 : 0.25 } }),
     });
     if (!response.ok) throw fail(`Ollama request failed: ${response.status}`, 502);
     const json = await response.json();
@@ -176,45 +214,49 @@ export async function ollamaChat({ role, input, prior, signal }) {
 export async function runRound(rawInput, { chat = ollamaChat, emit = () => {}, signal } = {}) {
   const input = cleanInput(rawInput);
   return traceRound(input, async () => {
-  const turns = []; const path = ['task-contract']; const violations = [];
+  const turns = []; const path = ['task_list']; const violations = [];
   const call = async (stage, node, adjust = (value) => value) => {
     try {
       const task = modelInput(stage, input); const prior = turns.slice(-1);
       return await traceAgent(stage, { task, prior }, async () => {
-        const reply = await chat({ role: stage, input: task, prior, signal });
-        const next = adjust({ ...turn(reply?.content, stage), provider: reply?.provider || 'ollama', fallbackReason: reply?.fallbackReason || null, metrics: reply?.metrics || {} }); turns.push(next); path.push(node); emit({ type: 'turn', roundId: input.roundId, turn: next }); return next;
+        const reply = await chat({ role: stage, input: task, prior, signal, model: input.model });
+        const next = adjust({ ...turn(reply?.content, stage), model: input.model, provider: reply?.provider || 'ollama', fallbackReason: reply?.fallbackReason || null, metrics: reply?.metrics || {} }); turns.push(next); path.push(node); emit({ type: 'turn', roundId: input.roundId, turn: next }); return next;
       });
     } catch (error) {
       violations.push({ code: 'invalid-turn', stage, message: error.message });
-      emit({ type: 'blocked', roundId: input.roundId, stage, message: error.message });
+      emit({ type: 'blocked', roundId: input.roundId, stage, nodeId: nodeForStage[stage], message: error.message });
       return null;
     }
   };
   const finish = (status) => {
-    const diagramPath = [...path, 'human-resolution'];
-    const deviation = comparePath(diagramPath, WORKFLOW_EDGES);
+    const deviation = comparePath(path, WORKFLOW_EDGES);
     if (!deviation.ok) violations.push(...deviation.violations.map((item) => ({ code: 'diagram-deviation', ...item })));
-    return { ...input, status, turns, path: diagramPath, violations };
+    return { ...input, status, turns, path, violations };
   };
-  const contract = await call('big-brain-contract', 'big-brain');
-  const attempt = contract && await call('abbott-attempt', 'abbott');
-  const review = attempt && await call('big-brain-review', 'evidence', (result) => input.hiddenRegression && result.status === 'DONE' ? {
+  const contract = await call('big-brain-contract', 'creative_cast');
+  if (contract) path.push('sincere_prompt');
+  const attempt = contract && await call('abbott-attempt', 'worker_attempt');
+  const review = attempt && await call('big-brain-review', 'evidence_check', (result) => input.hiddenRegression ? {
     ...result,
     status: 'WRONG',
     failedField: 'PROOF',
     evidence: `Director-only regression not addressed: ${input.hiddenRegression}`,
     correction: 'Revise the proposal to handle this regression and preserve the acceptance check.',
   } : result);
-  if (!review) return finish('blocked');
-  if (review.status === 'DONE') return finish('candidate-done');
-  const correction = await call('costello-correction', 'costello');
-  if (correction) path.push('correction-packet');
-  const retry = correction && await call('abbott-retry', 'abbott-retry');
-  if (retry) path.push('retry-evidence');
-  const recheck = retry && await call('costello-recheck', 'costello-recheck');
-  const decision = recheck && await call('big-brain-decision', 'manager-decision');
-  const status = decision?.status === 'DONE' ? 'candidate-done' : decision ? 'candidate-unresolved' : 'blocked';
-  return finish(status);
+  if (!review) { path.push('final_transcript'); return finish('blocked'); }
+  if (review.status === 'DONE') { path.push('task_closed', 'more_tasks', 'final_transcript'); return finish('candidate-done'); }
+  emit({ type: 'joke', phase: 'setup', text: review.evidence, roundId: input.roundId, nodeId: 'failure_beat' });
+  const correction = await call('costello-correction', 'failure_beat');
+  if (!correction) { path.push('final_transcript'); return finish('blocked'); }
+  emit({ type: 'joke', phase: 'turn', text: correction.reaction, roundId: input.roundId, nodeId: 'failure_beat' });
+  path.push('attempt_ledger', 'sincere_prompt');
+  const retry = await call('abbott-retry', 'worker_attempt');
+  const recheck = retry && await call('costello-recheck', 'evidence_check');
+  if (!recheck) { path.push('final_transcript'); return finish('blocked'); }
+  emit({ type: 'joke', phase: 'payoff', text: recheck.reaction, roundId: input.roundId, nodeId: 'final_transcript' });
+  if (recheck.status === 'DONE') { path.push('task_closed', 'more_tasks', 'final_transcript'); return finish('candidate-done'); }
+  path.push('final_transcript');
+  return finish('candidate-unresolved');
   });
 }
 
@@ -265,7 +307,7 @@ function codexAvailable() {
   });
 }
 
-export function createServer({ store = new JsonlStore(new URL('./workspace-comedians.runs.jsonl', import.meta.url)), chat = hybridChat, healthProbe = null, fallbackProbe = codexAvailable, diagramProbe = () => access(DIAGRAM_FILE) } = {}) {
+export function createServer({ store = new JsonlStore(new URL('./workspace-comedians.runs.jsonl', import.meta.url)), chat = hybridChat, healthProbe = null, fallbackProbe = codexAvailable, diagramProbe = () => access(DIAGRAM_FILE), modelsProbe = ollamaModels } = {}) {
   let active = false;
   return createHttpServer(async (request, response) => {
     try {
@@ -285,29 +327,41 @@ export function createServer({ store = new JsonlStore(new URL('./workspace-comed
           probe().then(() => true, () => false), fallbackProbe().then(Boolean, () => false), diagramProbe().then(() => true, () => false),
         ]);
         const ok = diagram && (ollama || codex);
-        return send(response, ok ? 200 : 503, { ok, model: MODEL, fallbackModel: 'gpt-5.6-luna', active, ollama, codex, diagram });
+        return send(response, ok ? 200 : 503, { ok, model: DEFAULT_MODEL, fallbackModel: 'gpt-5.6-luna', active, ollama, codex, diagram });
+      }
+      if (key === 'GET /api/models') {
+        const models = completionModels(await modelsProbe());
+        return send(response, 200, { recommended: models.some(({ name }) => name === DEFAULT_MODEL) ? DEFAULT_MODEL : models[0]?.name || null, models });
       }
       if (key === 'GET /api/cases') return send(response, 200, await store.cases());
-      const startRound = async (item, value) => {
+      const startRound = async (item, value, { persistCase = false } = {}) => {
         if (active) throw fail('A round is already running', 409);
-        const followUp = value.previousRoundId ? validateFollowUp(value) : null;
-        if (followUp && !item.rounds.some((round) => round.id === followUp.previousRoundId)) throw fail('Previous round is not in this case', 400);
-        const input = { ...item, ...followUp, caseId: item.id, roundId: randomUUID(), roundNumber: item.rounds.length + 1, unresolvedEvidence: followUp?.unresolvedEvidence || '' };
-        active = true; response.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-cache' });
-        const abort = new AbortController(); request.once('aborted', () => abort.abort());
-        const emit = (event) => { if (!response.writableEnded) response.write(`${JSON.stringify(event)}\n`); };
-        emit({ type: 'started', caseId: input.caseId, roundId: input.roundId });
-        try { const result = await runRound(input, { chat, emit, signal: abort.signal }); await store.append({ type: 'round', id: input.roundId, caseId: input.caseId, roundNumber: input.roundNumber, ...result }); emit({ type: 'complete', round: result }); }
-        finally { await flushTracing(); active = false; if (!response.writableEnded) response.end(); }
+        active = true;
+        try {
+          const rounds = item.rounds || [];
+          const followUp = value.previousRoundId ? validateFollowUp(value) : null;
+          if (followUp && !rounds.some((round) => round.id === followUp.previousRoundId)) throw fail('Previous round is not in this case', 400);
+          const model = selectModel(item.model, completionModels(await modelsProbe()));
+          const caseItem = { ...item, model };
+          const input = { ...caseItem, ...followUp, caseId: item.id, roundId: randomUUID(), roundNumber: rounds.length + 1, unresolvedEvidence: followUp?.unresolvedEvidence || '' };
+          if (persistCase) { const { rounds: ignored, ...record } = caseItem; await store.append(record); }
+          response.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-cache' });
+          const abort = new AbortController(); request.once('aborted', () => abort.abort());
+          const emit = (event) => { if (!response.writableEnded) response.write(`${JSON.stringify(event)}\n`); };
+          emit({ type: 'started', caseId: input.caseId, roundId: input.roundId });
+          try { const result = await runRound(input, { chat, emit, signal: abort.signal }); await store.append({ type: 'round', id: input.roundId, caseId: input.caseId, roundNumber: input.roundNumber, ...result }); emit({ type: 'complete', round: result }); }
+          finally { await flushTracing(); if (!response.writableEnded) response.end(); }
+        } finally { active = false; }
       };
       if (key === 'POST /api/cases') {
-        const value = await body(request); const record = { type: 'case', id: randomUUID(), hypothetical: text(value.hypothetical, 'hypothetical'), acceptance: text(value.acceptance, 'acceptance'), hiddenRegression: text(value.hiddenRegression || '', 'hiddenRegression', false) };
-        await store.append(record); return startRound({ ...record, rounds: [] }, value);
+        const value = await body(request);
+        const record = { type: 'case', id: randomUUID(), hypothetical: text(value.hypothetical, 'hypothetical'), acceptance: text(value.acceptance, 'acceptance'), hiddenRegression: text(value.hiddenRegression, 'hiddenRegression'), model: text(value.model || DEFAULT_MODEL, 'model') };
+        return await startRound({ ...record, rounds: [] }, value, { persistCase: true });
       }
       const roundMatch = url.pathname.match(/^\/api\/cases\/([^/]+)\/rounds$/);
       if (request.method === 'POST' && roundMatch) {
         const cases = await store.cases(); const item = cases.find((candidate) => candidate.id === decodeURIComponent(roundMatch[1])); if (!item) throw fail('Case not found', 404);
-        return startRound(item, await body(request));
+        return await startRound(item, await body(request));
       }
       const verdictMatch = url.pathname.match(/^\/api\/rounds\/([^/]+)\/verdicts$/);
       if (request.method === 'POST' && verdictMatch) {

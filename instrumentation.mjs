@@ -13,16 +13,27 @@ sdk?.start();
 
 export function traceRoundMetadata(input) {
   return {
-    traceName: 'run-duo-round',
+    traceName: 'run-office-comedy',
     sessionId: input.caseId,
-    tags: ['duo'],
-    metadata: { roundId: input.roundId, roundNumber: String(input.roundNumber) },
+    tags: ['office-comedy'],
+    metadata: { roundId: input.roundId, roundNumber: String(input.roundNumber), ...(input.model ? { model: input.model } : {}) },
     input: { hypothetical: input.hypothetical, acceptance: input.acceptance },
   };
 }
 
 function errorAttributes(error) {
   return { level: 'ERROR', statusMessage: error?.message || String(error) };
+}
+
+export function traceRoundOutput(result) {
+  const final = result.turns?.at(-1);
+  return {
+    status: result.status, path: result.path, violations: result.violations,
+    finalTurn: final && {
+      role: final.role, status: final.status, action: final.action, evidence: final.evidence,
+      reaction: final.reaction, provider: final.provider,
+    },
+  };
 }
 
 export async function traceRound(input, run) {
@@ -33,7 +44,7 @@ export async function traceRound(input, run) {
       agent.update({ input: traceInput });
       try {
         const result = await run();
-        agent.update({ output: { status: result.status, path: result.path, violations: result.violations } });
+        agent.update({ output: traceRoundOutput(result) });
         return result;
       } catch (error) {
         agent.update(errorAttributes(error));
